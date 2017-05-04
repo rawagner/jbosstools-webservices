@@ -15,8 +15,8 @@ import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.widgets.Event;
 import org.jboss.reddeer.swt.api.TreeItem;
+import org.jboss.reddeer.common.util.Display;
 import org.jboss.reddeer.core.handler.TreeHandler;
-import org.jboss.reddeer.core.util.Display;
 
 /**
  * Red Deer Helper.

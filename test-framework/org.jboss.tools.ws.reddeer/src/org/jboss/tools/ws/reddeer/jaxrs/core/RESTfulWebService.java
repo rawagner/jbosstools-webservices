@@ -11,7 +11,7 @@
 package org.jboss.tools.ws.reddeer.jaxrs.core;
 
 import org.jboss.reddeer.eclipse.core.resources.ProjectItem;
-import org.jboss.reddeer.jface.viewer.handler.TreeViewerHandler;
+import org.jboss.reddeer.jface.handler.TreeViewerHandler;
 import org.jboss.reddeer.swt.api.TreeItem;
 
 /**
