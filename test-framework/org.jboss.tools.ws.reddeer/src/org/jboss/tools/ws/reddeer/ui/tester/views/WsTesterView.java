@@ -16,7 +16,7 @@ import java.util.Map;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.jboss.reddeer.swt.api.Combo;
 import org.jboss.reddeer.swt.api.Text;
-import org.jboss.reddeer.core.condition.ShellWithTextIsActive;
+import org.jboss.reddeer.swt.condition.ShellIsActive;
 import org.jboss.reddeer.core.matcher.WithTextMatcher;
 import org.jboss.reddeer.swt.impl.button.PushButton;
 import org.jboss.reddeer.swt.impl.combo.DefaultCombo;
@@ -341,10 +341,10 @@ public class WsTesterView extends WorkbenchView {
 		activate();
 		new DefaultToolItem(JBossWSUIMessages.JAXRSWSTestView2_Go_Tooltip)
 				.click();
-		new WaitUntil(new ShellWithTextIsActive(
+		new WaitUntil(new ShellIsActive(
 				JBossWSUIMessages.JAXRSWSTestView_Invoking_WS_Status),
-				TimePeriod.NORMAL, false);
-		new WaitWhile(new ShellWithTextIsActive(
+				TimePeriod.DEFAULT, false);
+		new WaitWhile(new ShellIsActive(
 				JBossWSUIMessages.JAXRSWSTestView_Invoking_WS_Status),
 				TimePeriod.LONG);
 	}

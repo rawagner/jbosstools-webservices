@@ -14,7 +14,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.jboss.reddeer.swt.api.Combo;
-import org.jboss.reddeer.core.condition.ShellWithTextIsActive;
+import org.jboss.reddeer.swt.condition.ShellIsActive;
 import org.jboss.reddeer.swt.exception.SWTLayerException;
 import org.jboss.reddeer.common.exception.WaitTimeoutExpiredException;
 import org.jboss.reddeer.swt.impl.button.PushButton;
@@ -142,8 +142,8 @@ public class SelectWSDLDialog extends DefaultShell {
 
 		// workaround for https://issues.jboss.org/browse/JBIDE-14618
 		try {
-			new WaitUntil(new ShellWithTextIsActive("Progress Information"));
-			new WaitWhile(new ShellWithTextIsActive("Progress Information"), TimePeriod.getCustom(24));
+			new WaitUntil(new ShellIsActive("Progress Information"));
+			new WaitWhile(new ShellIsActive("Progress Information"), TimePeriod.getCustom(24));
 		} catch (WaitTimeoutExpiredException sle) {
 			// WISE call was pretty quick - no progress information dialog appears
 		}
@@ -156,7 +156,7 @@ public class SelectWSDLDialog extends DefaultShell {
 			// no WS message replacing - no dialog appeared
 		}
 		
-		new WaitWhile(new ShellWithTextIsActive(TITLE));
+		new WaitWhile(new ShellIsActive(TITLE));
 	}
 
 	private org.jboss.reddeer.swt.api.List getOperationsList() {
