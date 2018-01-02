@@ -24,6 +24,7 @@ import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.wst.ws.internal.wsrt.IWebServiceClient;
 import org.eclipse.wst.ws.internal.wsrt.WebServiceClientInfo;
 import org.eclipse.wst.ws.internal.wsrt.WebServiceScenario;
+import org.jboss.tools.test.util.JobUtils;
 import org.jboss.tools.ws.jaxws.core.test.util.JBossJAXWSCoreTestUtils;
 import org.jboss.tools.ws.jaxws.ui.classpath.JBossWSRuntimeClassPathInitializer.JBossWSRuntimeClasspathContainer;
 import org.jboss.tools.ws.jaxws.ui.commands.ClientSampleCreationCommand;
@@ -72,16 +73,22 @@ public class JBossWSClientCommandTest extends AbstractJBossWSGenerationTest {
 	@Test
 	public void testClientCodeGenerationCommand() throws ExecutionException, CoreException {
 		IProject project = fproject.getProject();
+		System.out.println("cp: "+model.getCustomPackage());
 		model.setJavaProject(JavaCore.create(project));
 		// test wsdl2Javacommand
 		model.setJavaSourceFolder("//JBossWSTestProject//src");
+		System.out.println("cp: "+model.getCustomPackage());
 		WSDL2JavaCommand cmdW2j = new WSDL2JavaCommand(model);
 		IStatus status = cmdW2j.execute(null, null);
 		assertFalse(status.getMessage(), Status.ERROR == status.getSeverity());
+		System.out.println("cp: "+model.getCustomPackage());
 		assertTrue(project.getFile("src/org/apache/hello_world_soap_http/Greeter.java").exists());
 
+		System.out.println("cp: "+model.getCustomPackage());
+		JobUtils.waitForIdle();
 		// test ClientSampleCreationCommand
 		ClientSampleCreationCommand cmdImpl = new ClientSampleCreationCommand(model);
+		System.out.println("cp: "+model.getCustomPackage());
 		status = cmdImpl.execute(null, null);
 		assertTrue(status.getMessage(), status.isOK());
 		project.refreshLocal(IResource.DEPTH_INFINITE, new NullProgressMonitor());

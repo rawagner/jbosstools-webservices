@@ -276,9 +276,14 @@ public class WtpUtils {
 		try {
 			final IFolder webinfFolder = getWebInfFolder(project);
 			if (webinfFolder == null) {
+				System.out.println("webinfFolder is null");
 				return false;
 			}
 			final IFile file = webinfFolder.getFile("web.xml");
+			System.out.println("file is null? "+file == null);
+			if(file != null) {
+				System.out.println("file exists?" +file.exists());
+			}
 			return (file != null && file.exists());
 		} finally {
 			Logger.tracePerf("Looked-up Web Deployment Description in {}ms", (System.currentTimeMillis() - startTime));
@@ -293,6 +298,10 @@ public class WtpUtils {
 	public static IFile getWebDeploymentDescriptor(IProject project) throws CoreException {
 		final IFolder webinfFolder = getWebInfFolder(project);
 		final IFile file = webinfFolder.getFile("web.xml");
+		System.out.println("file is null? "+file == null);
+		if(file != null) {
+			System.out.println("file exists? "+file.exists());
+		}
 		if (file != null && file.exists()) {
 			return (IFile) project.findMember(file.getProjectRelativePath());
 		}

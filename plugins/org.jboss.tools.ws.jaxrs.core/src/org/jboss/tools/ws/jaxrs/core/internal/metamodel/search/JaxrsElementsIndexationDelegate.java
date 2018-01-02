@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -22,24 +23,26 @@ import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.Collector;
+import org.apache.lucene.search.BooleanQuery.Builder;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TotalHitCountCollector;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.util.Version;
+import org.apache.lucene.util.Bits;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.Path;
@@ -64,7 +67,7 @@ public class JaxrsElementsIndexationDelegate {
 	private final StandardAnalyzer analyzer;
 	private final IndexWriterConfig config;
 	private IndexWriter indexWriter;
-	private IndexReader indexReader;
+	private DirectoryReader indexReader;
 	private IndexSearcher indexSearcher;
 
 	/**
@@ -79,12 +82,12 @@ public class JaxrsElementsIndexationDelegate {
 	public JaxrsElementsIndexationDelegate(final JaxrsMetamodel metamodel) throws CoreException {
 		try {
 			this.metamodel = metamodel;
-			analyzer = new StandardAnalyzer(Version.LUCENE_35);
-			config = new IndexWriterConfig(Version.LUCENE_35, analyzer);
+			analyzer = new StandardAnalyzer();
+			config = new IndexWriterConfig(analyzer);
 			config.setMaxBufferedDeleteTerms(1);
 			index = new RAMDirectory();
 			indexWriter = new IndexWriter(index, config);
-			indexReader = IndexReader.open(indexWriter, true);
+			indexReader = DirectoryReader.open(indexWriter);
 			indexSearcher = new IndexSearcher(indexReader);
 		} catch (Exception e) {
 			throw new CoreException(new Status(Status.ERROR, JBossJaxrsCorePlugin.PLUGIN_ID,
@@ -99,7 +102,7 @@ public class JaxrsElementsIndexationDelegate {
 	 * @throws IOException
 	 */
 	public void dispose() throws CorruptIndexException, IOException {
-		indexWriter.close(true);
+		indexWriter.close();
 		index.close();
 	}
 
@@ -194,9 +197,11 @@ public class JaxrsElementsIndexationDelegate {
 				Logger.debugIndexing("Unindexing {} after removal...", identifierTerm);
 				
 			}
-			final BooleanQuery deleteResourceMarkersQuery = new BooleanQuery();
-			deleteResourceMarkersQuery.add(new BooleanClause(new TermQuery(identifierTerm), Occur.MUST));
-			deleteResourceMarkersQuery.add(new BooleanClause(new TermQuery(markerTypeTerm), Occur.MUST_NOT));
+			Builder booleanQueryBuilder = new Builder();
+			booleanQueryBuilder.add(new BooleanClause(new TermQuery(identifierTerm), Occur.MUST));
+			booleanQueryBuilder.add(new BooleanClause(new TermQuery(markerTypeTerm), Occur.MUST_NOT));
+			
+			final BooleanQuery deleteResourceMarkersQuery = booleanQueryBuilder.build();
 			
 			if(Logger.isDebugIndexingEnabled()) {
 				Logger.debugIndexing("Removing {} documents from index", count(deleteResourceMarkersQuery));
@@ -238,13 +243,13 @@ public class JaxrsElementsIndexationDelegate {
 	 * @return the result query.
 	 */
 	public static BooleanQuery joinTerms(final Term... terms) {
-		final BooleanQuery query = new BooleanQuery();
+		Builder booleanQueryBuilder = new Builder();
 		if (terms != null) {
 			for (Term term : terms) {
-				query.add(new BooleanClause(new TermQuery(term), Occur.MUST));
+				booleanQueryBuilder.add(new BooleanClause(new TermQuery(term), Occur.MUST));
 			}
 		}
-		return query;
+		return booleanQueryBuilder.build();
 	}
 	
 	/**
@@ -364,7 +369,7 @@ public class JaxrsElementsIndexationDelegate {
 	}
 
 	private IndexSearcher getNewIndexSearcherIfNeeded() throws IOException {
-		final IndexReader newIndexReader = IndexReader.openIfChanged(indexReader, indexWriter, true);
+		final DirectoryReader newIndexReader = DirectoryReader.openIfChanged(indexReader, indexWriter, true);
 		if (newIndexReader != null) {
 			this.indexReader = newIndexReader;
 			Logger.traceIndexing("Reopening IndexReader (current={} / hasDeletions={}) now containing {} documents",
@@ -375,25 +380,22 @@ public class JaxrsElementsIndexationDelegate {
 	}
 
 	/**
-	 * Document IDs Collector. Collectd the mathcing {@link Document}'s
+	 * Document IDs Collector. Collectd the matching {@link Document}'s
 	 * {@code LuceneDocumentFactory#FIELD_IDENTIFIER} {@link Field} in a
 	 * {@link Set} to avoid duplicate results.
 	 * 
 	 * @author xcoulon
 	 * 
 	 */
-	static abstract class AnyResultsCollector<T> extends Collector {
-
-		/** The current Lucene {@link IndexReader}. */
-		private IndexReader indexReader;
+	static abstract class AnyResultsCollector<T> extends SimpleCollector {
+		
+		protected LeafReaderContext context;
 		
 		/**
 		 * Set of doc identifiers matching the query. Using a {@link TreeSet} to
 		 * keep order of returned elements.
 		 */
 		final Set<T> results;
-
-		private int docBase;
 
 		public AnyResultsCollector(final Set<T> results) {
 			this.results = results;
@@ -404,46 +406,28 @@ public class JaxrsElementsIndexationDelegate {
 		}
 
 		@Override
-		public void setNextReader(IndexReader indexReader, int docBase) throws IOException {
-			this.setIndexReader(indexReader);
-			this.setDocBase(docBase);
-		}
-
-		@Override
-		public boolean acceptsDocsOutOfOrder() {
-			return true;
+		protected void doSetNextReader(LeafReaderContext context) throws IOException {
+			this.context = context;
 		}
 
 		public Set<T> getResults() throws CorruptIndexException, IOException {
 			return results;
 		}
-
-		/**
-		 * @return the indexReader
-		 */
-		public IndexReader getIndexReader() {
-			return indexReader;
+		
+		public boolean isDocumentDeleted(int docId) {
+			List<LeafReaderContext> leaves = context.reader().leaves();
+			for(LeafReaderContext leave : leaves) {
+				Bits liveDocs = leave.reader().getLiveDocs();
+				if(liveDocs != null && liveDocs.get(docId)) {
+					return false;
+				}
+			}
+			return true;
 		}
-
-		/**
-		 * @param indexReader the indexReader to set
-		 */
-		public void setIndexReader(IndexReader indexReader) {
-			this.indexReader = indexReader;
-		}
-
-		/**
-		 * @return the docBase
-		 */
-		public int getDocBase() {
-			return docBase;
-		}
-
-		/**
-		 * @param docBase the docBase to set
-		 */
-		public void setDocBase(int docBase) {
-			this.docBase = docBase;
+		
+		@Override
+		public boolean needsScores() {
+			return false;
 		}
 
 	}
@@ -461,9 +445,9 @@ public class JaxrsElementsIndexationDelegate {
 		@SuppressWarnings("unchecked")
 		@Override
 		public void collect(int docId) throws IOException {
-			Logger.traceIndexing("  Adding doc#{} (deleted={}) to search results", (getDocBase() + docId),
-					getIndexReader().isDeleted(docId));
-			final Document document = getIndexReader().document(docId);
+			Logger.traceIndexing("  Adding doc#{} (deleted={}) to search results", (context.docBase + docId),
+					isDocumentDeleted(docId));
+			final Document document = context.reader().document(docId);
 			final String docIdentifier = document.get(LuceneFields.FIELD_IDENTIFIER);
 			final String docCategory = document.get(LuceneFields.FIELD_TYPE);
 			Logger.traceIndexing("  Retrieved document #{} ({})", docIdentifier, docCategory);
@@ -486,9 +470,9 @@ public class JaxrsElementsIndexationDelegate {
 		
 		@Override
 		public void collect(int docId) throws IOException {
-			Logger.traceIndexing("  Adding doc#{} (deleted={}) to search results", (getDocBase() + docId),
-					getIndexReader().isDeleted(docId));
-			final Document document = getIndexReader().document(docId);
+			Logger.traceIndexing("  Adding doc#{} (deleted={}) to search results", (context.docBase + docId),
+					isDocumentDeleted(docId));
+			final Document document = context.reader().document(docId);
 			final String docIdentifier = document.get(LuceneFields.FIELD_IDENTIFIER);
 			final String docCategory = document.get(LuceneFields.FIELD_TYPE);
 			Logger.traceIndexing("  Retrieved document #{} ({})", docIdentifier, docCategory);
@@ -506,9 +490,9 @@ public class JaxrsElementsIndexationDelegate {
 		}
 		@Override
 		public void collect(int docId) throws IOException {
-			Logger.traceIndexing("  Adding doc#{} (deleted={}) to search results", (getDocBase() + docId),
-					getIndexReader().isDeleted(docId));
-			final Document document = getIndexReader().document(docId);
+			Logger.traceIndexing("  Adding doc#{} (deleted={}) to search results", (context.docBase + docId),
+					isDocumentDeleted(docId));
+			final Document document = context.reader().document(docId);
 			final String identifier = document.get(LuceneFields.FIELD_IDENTIFIER);
 			final String resourcePath = document.get(LuceneFields.FIELD_RESOURCE_PATH);
 			Logger.traceIndexing("  Retrieved document #{} for resource at {}", identifier, resourcePath);

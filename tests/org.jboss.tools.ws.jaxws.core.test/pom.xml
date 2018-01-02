@@ -9,7 +9,6 @@
 	</parent>
 	<groupId>org.jboss.tools.ws.tests</groupId>
 	<artifactId>org.jboss.tools.ws.jaxws.core.test</artifactId>
-	
 	<packaging>eclipse-test-plugin</packaging>
 
 	<!-- if running these tests locally, be sure to pass in real values for the jre paths below, eg:

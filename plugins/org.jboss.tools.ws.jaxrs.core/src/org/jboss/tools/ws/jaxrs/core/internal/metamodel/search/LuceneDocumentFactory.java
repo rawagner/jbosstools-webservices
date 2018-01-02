@@ -41,6 +41,8 @@ import java.util.Map.Entry;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.Term;
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IResource;
@@ -301,7 +303,9 @@ public class LuceneDocumentFactory {
 		if (name == null || value == null) {
 			return;
 		}
-		document.add(new Field(name, value, Field.Store.YES, Field.Index.NOT_ANALYZED));
+		FieldType ft = new FieldType(StringField.TYPE_STORED);
+		ft.setOmitNorms(false);
+		document.add(new Field(name, value, ft));
 	}
 
 	/**
@@ -321,7 +325,9 @@ public class LuceneDocumentFactory {
 			return;
 		}
 		for(String value : values) {
-			document.add(new Field(name, value, Field.Store.YES, Field.Index.NOT_ANALYZED));
+			FieldType ft = new FieldType(StringField.TYPE_STORED);
+			ft.setOmitNorms(false);
+			document.add(new Field(name, value, ft));
 		}
 	}
 	

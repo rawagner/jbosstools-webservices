@@ -127,12 +127,14 @@ public class JBossWSTopDownCommandTest extends AbstractJBossWSGenerationTest {
 		model.setGenerateImplementatoin(false);
 		ImplementationClassCreationCommand cmdImpl = new ImplementationClassCreationCommand(model);
 		status = cmdImpl.execute(null, null);
+		JobUtils.waitForIdle();
 		assertTrue(status.getMessage(), status.getSeverity() != Status.ERROR);
 		assertFalse(project.getFile("src/org/apache/hello_world_soap_http.impl/GreeterImpl.java").exists());
 		
 		model.setGenerateImplementatoin(true);
 		cmdImpl = new ImplementationClassCreationCommand(model);
 		status = cmdImpl.execute(null, null);
+		JobUtils.waitForIdle();
 		assertTrue(status.getMessage(), status.getSeverity() != Status.ERROR);
 		assertTrue("failed to generate implemenatation class", project.getFile("src/org/apache/hello_world_soap_http/impl/GreeterImpl.java").exists());		
 	}

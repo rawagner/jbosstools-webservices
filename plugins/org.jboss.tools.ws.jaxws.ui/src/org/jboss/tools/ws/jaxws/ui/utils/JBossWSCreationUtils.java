@@ -544,7 +544,7 @@ public class JBossWSCreationUtils {
 	}
 
 	/**
-	 * find compilationunit by annotation
+	 * find compilation unit by annotation
 	 * 
 	 * @param project
 	 * @param annotation
@@ -554,12 +554,15 @@ public class JBossWSCreationUtils {
 			IJavaProject project, String annotation, String packageName) {
 		List<ICompilationUnit> units = new LinkedList<ICompilationUnit>();
 		try {
+			System.out.println("packageName: "+packageName);
 			IPath path = addPackagetoPath(project, packageName);
 			if (path == null) {
 				IResource[] resources = JBossWSCreationUtils.getJavaSourceRoots(project);
 				if (resources != null && resources.length > 0) {
+					System.out.println("Resources length: "+resources.length);
 					IJavaElement[] elements = project.getPackageFragmentRoot(
 							resources[0]).getChildren();
+					System.out.println("Elements length: "+elements.length);
 					for (IJavaElement element : elements) {
 						if (IJavaElement.PACKAGE_FRAGMENT == element
 								.getElementType()) {
@@ -569,11 +572,13 @@ public class JBossWSCreationUtils {
 					}
 				}
 			} else {
+				System.out.println("was null");
 				findInPackageFragment(units, path, project, annotation);
 			}
 		} catch (JavaModelException e) {
 			JBossJAXWSUIPlugin.getDefault().logError(e);
 		}
+		System.out.println("Units: "+units.size());
 		return units;
 	}
 

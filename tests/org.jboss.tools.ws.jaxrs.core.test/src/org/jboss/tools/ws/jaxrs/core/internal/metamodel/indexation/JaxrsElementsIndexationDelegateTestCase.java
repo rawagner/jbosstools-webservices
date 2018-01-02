@@ -162,6 +162,9 @@ public class JaxrsElementsIndexationDelegateTestCase {
 		// operation
 		final Collection<JaxrsEndpoint> endpoints = metamodel.findEndpoints(application);
 		// verifications
+		for(JaxrsEndpoint endPoint: endpoints) {
+			System.out.println(endPoint.toString());
+		}
 		assertThat(endpoints.size(), equalTo(5));
 	}
 

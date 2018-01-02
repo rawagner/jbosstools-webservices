@@ -11,6 +11,7 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.ISourceRange;
+import org.jboss.tools.test.util.JobUtils;
 import org.jboss.tools.ws.jaxrs.core.junitrules.TestProjectMonitor;
 import org.jboss.tools.ws.jaxrs.core.junitrules.WorkspaceSetupRule;
 import org.jboss.tools.ws.jaxrs.core.wtp.WtpUtils;
@@ -35,6 +36,7 @@ public class WtpUtilsTestCase {
 	public void setup() {
 		javaProject = projectMonitor.getJavaProject();
 		project = javaProject.getProject();
+		JobUtils.waitForIdle();
 	}
 	
 	@Test

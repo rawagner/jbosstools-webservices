@@ -82,9 +82,11 @@ public class ClientSampleCreationCommand extends AbstractDataModelOperation {
 						JBossJAXWSCoreMessages.Webservice_Annotation,
 						model.getCustomPackage());
 		
+		System.out.println("clientUnits: "+clientUnits.size());
 		if (clientUnits.size() == 0) {
 			return status;
 		}
+		
 		List<String> packageList = new LinkedList<String>();
 		for (ICompilationUnit unit : clientUnits) {
 			if (!packageList.contains(unit.getParent().getElementName())) {

@@ -28,6 +28,7 @@ import org.eclipse.jdt.core.IJavaElement;
 import org.eclipse.jdt.core.IMember;
 import org.eclipse.jdt.core.IType;
 import org.eclipse.jdt.core.JavaModelException;
+import org.jboss.tools.test.util.JobUtils;
 import org.jboss.tools.ws.jaxrs.core.JBossJaxrsCorePlugin;
 import org.jboss.tools.ws.jaxrs.core.configuration.ProjectBuilderUtils;
 import org.jboss.tools.ws.jaxrs.core.configuration.ProjectNatureUtils;
@@ -129,7 +130,7 @@ public class JaxrsMetamodelMonitor extends TestProjectMonitor implements IJaxrsM
 		TestLogger.debug("*********************************************************************");
 		TestLogger.debug("* Tearing down project (with metamodel: {}) after test run ({}ms)", buildMetamodel, (System.currentTimeMillis() - testStartTime));
 		TestLogger.debug("*********************************************************************");
-		
+		JobUtils.waitForIdle();
 		if(this.metamodel == null) {
 			return;
 		}
